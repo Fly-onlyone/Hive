@@ -58,6 +58,8 @@ services:
       - "10000:10000"
     networks:
       - hive-net
+    volumes:
+      - ./shared-data:/data
 
   hive-metastore-postgresql:
     image: bde2020/hive-metastore-postgresql:2.3.0
