@@ -12,6 +12,8 @@ services:
       - ./hadoop-hive.env
     ports:
       - "50070:50070"
+    networks:
+      - hive-net
 
   datanode:
     image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
@@ -24,17 +26,8 @@ services:
       SERVICE_PRECONDITION: "namenode:50070"
     ports:
       - "50075:50075"
-
-  hive-server:
-    image: bde2020/hive:2.3.2-postgresql-metastore
-    container_name: hive-server
-    env_file:
-      - ./hadoop-hive.env
-    environment:
-      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
-      SERVICE_PRECONDITION: "hive-metastore:9083"
-    ports:
-      - "10000:10000"
+    networks:
+      - hive-net
 
   hive-metastore:
     image: bde2020/hive:2.3.2-postgresql-metastore
@@ -44,62 +37,33 @@ services:
     command: /opt/hive/bin/hive --service metastore
     environment:
       SERVICE_PRECONDITION: "namenode:50070 datanode:50075 hive-metastore-postgresql:5432"
+      # Set Hive warehouse directory to match the shared mount
+      HIVE_CORE_CONF_hive_metastore_warehouse_dir: "/warehouse"
     ports:
       - "9083:9083"
+    volumes:
+      - hive-warehouse:/warehouse
+    networks:
+      - hive-net
+
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    env_file:
+      - ./hadoop-hive.env
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore-postgresql/metastore"
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+    ports:
+      - "10000:10000"
+    networks:
+      - hive-net
 
   hive-metastore-postgresql:
     image: bde2020/hive-metastore-postgresql:2.3.0
     container_name: hive-metastore-postgresql
-
-  trino-coordinator:
-    image: trinodb/trino:latest
-    container_name: trino-coordinator
-    user: root
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./trino-config:/etc/trino
-      - trino-data:/var/trino
-    command: >
-      sh -c "/usr/lib/trino/bin/launcher run --etc-dir /etc/trino"
-
-  spark-master:
-    user: root
-    build:
-      context: .
-      dockerfile: Dockerfile.spark
-    container_name: spark-master
-    ports:
-      - "7077:7077"
-      - "8081:8080"
-    environment:
-      - INIT_DAEMON_STEP=setup_spark
-      - JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
-      - SPARK_SUBMIT_OPTIONS=--conf spark.hadoop.hive.metastore.uris=thrift://hive-metastore:9083
-    volumes:
-      - spark-logs:/spark/logs
-      - ./shared-data:/data
-      - spark-warehouse:/spark-warehouse
-    command: >
-      bash -c "/spark/sbin/start-master.sh && tail -f /dev/null"
-
-  spark-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.spark
-    container_name: spark-worker
-    depends_on:
-      - spark-master
-    environment:
-      - SPARK_MASTER=spark://spark-master:7077
-      - WORKER_MEMORY=1G
-      - WORKER_CORES=1
-    volumes:
-      - spark-logs:/spark/logs
-      - ./shared-data:/data
-      - spark-warehouse:/spark-warehouse
-    command: >
-      bash -c "/spark/sbin/start-slave.sh spark://spark-master:7077 && tail -f /dev/null"
+    networks:
+      - hive-net
 
   jupyter:
     build:
@@ -111,16 +75,21 @@ services:
     volumes:
       - ./jupyter/jupyter_notebook_config.py:/home/jovyan/.jupyter/jupyter_notebook_config.py
       - ./shared-data:/data
-      - spark-warehouse:/spark-warehouse
+      - ./warehouse:/warehouse
     depends_on:
-      - spark-master
+      - hive-server
+      - hive-metastore
+    networks:
+      - hive-net
     command: >
       bash -c "jupyter notebook --ip=0.0.0.0 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''"
 
 volumes:
   namenode:
   datanode:
-  trino-data:
-  spark-logs:
+  hive-warehouse:
   shared-data:
-  spark-warehouse:
+
+networks:
+  hive-net:
+    driver: bridge
