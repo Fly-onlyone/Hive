@@ -1,8 +1,0 @@
-FROM jupyter/base-notebook
-
-USER root
-
-# Install libraries for Hive connectivity (PyHive and impyla)
-RUN pip install pyhive impyla
-
-USER jovyan

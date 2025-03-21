@@ -11,7 +11,8 @@ services:
     env_file:
       - ./hadoop-hive.env
     ports:
-      - "50070:50070"
+      - "51070:50070"
+      - "8020:8020"
     networks:
       - hive-net
 
@@ -25,7 +26,7 @@ services:
     environment:
       SERVICE_PRECONDITION: "namenode:50070"
     ports:
-      - "50075:50075"
+      - "51075:50075"
     networks:
       - hive-net
 
@@ -37,7 +38,6 @@ services:
     command: /opt/hive/bin/hive --service metastore
     environment:
       SERVICE_PRECONDITION: "namenode:50070 datanode:50075 hive-metastore-postgresql:5432"
-      # Set Hive warehouse directory to match the shared mount
       HIVE_CORE_CONF_hive_metastore_warehouse_dir: "/warehouse"
     ports:
       - "9083:9083"
@@ -53,7 +53,7 @@ services:
       - ./hadoop-hive.env
     environment:
       HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore-postgresql/metastore"
-      SERVICE_PRECONDITION: "hive-metastore:9083"
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 hive-metastore:9083"
     ports:
       - "10000:10000"
     networks:
@@ -66,25 +66,6 @@ services:
     container_name: hive-metastore-postgresql
     networks:
       - hive-net
-
-  jupyter:
-    build:
-      context: .
-      dockerfile: Dockerfile.jupyter
-    container_name: jupyter
-    ports:
-      - "8888:8888"
-    volumes:
-      - ./jupyter/jupyter_notebook_config.py:/home/jovyan/.jupyter/jupyter_notebook_config.py
-      - ./shared-data:/data
-      - ./warehouse:/warehouse
-    depends_on:
-      - hive-server
-      - hive-metastore
-    networks:
-      - hive-net
-    command: >
-      bash -c "jupyter notebook --ip=0.0.0.0 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''"
 
 volumes:
   namenode:
