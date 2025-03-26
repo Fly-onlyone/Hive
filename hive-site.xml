@@ -23,6 +23,11 @@
     <name>hive.compactor.worker.threads</name>
     <value>1</value>
   </property>
+  <!-- Allow dynamic partitions (nonstrict is required for ACID INSERT operations) -->
+  <property>
+    <name>hive.exec.dynamic.partition.mode</name>
+    <value>nonstrict</value>
+  </property>
 
   <!-- HDFS settings -->
   <property>
@@ -57,10 +62,4 @@
     <name>hive.metastore.uris</name>
     <value>thrift://hive-metastore:9083</value>
   </property>
-
-  <property>
-    <name>hive.execution.engine</name>
-    <value>tez</value>
-  </property>
-
 </configuration>
