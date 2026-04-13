@@ -1,9 +1,3 @@
-
----
-
-## README cho repo `Hive`
-
-
 # Môi trường triển khai Hive bằng Docker
 
 ## Giới thiệu
