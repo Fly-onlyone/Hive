@@ -3,7 +3,7 @@
 
 ## README cho repo `Hive`
 
-```markdown
+
 # Môi trường triển khai Hive bằng Docker
 
 ## Giới thiệu
