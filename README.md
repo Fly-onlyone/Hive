@@ -15,7 +15,6 @@ Repo này được tạo ra để mô phỏng một môi trường dữ liệu c
 - kết nối Hive Server để truy vấn dữ liệu
 - chuẩn bị nền tảng để làm việc với các bài toán lưu trữ và phân tích dữ liệu lớn
 
-Đây là repo thể hiện định hướng của tôi trong mảng **Data Engineering**, đặc biệt ở phần cấu hình và triển khai hạ tầng dữ liệu.
 
 ## Thành phần chính
 
